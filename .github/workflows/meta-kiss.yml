@@ -1,0 +1,30 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-all:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [ dogbonedark, freiheit93, stompduck, ]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install kas
+        run: pip install kas
+      - name: Install host tools
+        run: sudo apt-get install chrpath diffstat
+      - name: Disable AppArmor on the GitHub runner
+        uses: cisagov/action-disable-apparmor@437d94f26a2e4bf8c03acfb500a6afc688b497db
+      - name: Kiss source checkout
+        run: kas checkout
+      - name: Accept licenses
+        run: echo 'LICENSE_FLAGS_ACCEPTED += "NXP_EULA_v58"' > build/conf/site.conf
+      - name: Configure machine
+        run : sed -i "/MACHINE/c\MACHINE = \"${{ matrix.config }}\"" build/conf/local.conf
+      - name: Optimize build space
+        run: echo 'INHERIT += "rm_work"' >> build/conf/local.conf
+      - name: Build image
+        run: source openembedded-core/oe-init-build-env; bitbake kiss-image
+      - name: Full build cleanup
+        run: rm -rf build
