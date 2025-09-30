@@ -1,0 +1,24 @@
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build-all:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config: [ dogbonedark, freiheit93, stompduck, ]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: simplest-yocto-setup
+      - name: Install kas
+        run: pip install kas
+      - name: Kiss checkout
+        run: kas checkout
+      - name: Configure machine
+        run : sed -i "/MACHINE/c\MACHINE = \"${{ matrix.config }}\"" build/conf/local.conf
+      - name: Build image
+        run: bitbake kiss-image
+      - name: Full build cleanup
+        run: rm -rf build
